@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { login } from '../services/auth';
+import { Mail, Lock, AlertCircle, Zap } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -15,11 +15,9 @@ export const Login: React.FC = () => {
 
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: () => {
-      navigate('/dashboard');
-    },
+    onSuccess: () => navigate('/dashboard'),
     onError: (err: any) => {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.detail || 'Invalid email or password.');
     },
   });
 
@@ -31,42 +29,73 @@ export const Login: React.FC = () => {
 
   return (
     <AuthLayout>
-      <Card className="animate-slide-up">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-            Welcome Back
-          </h1>
-          <p className="text-textMuted mt-2">Sign in to your ChainTrack account</p>
+      <div className="animate-slide-up">
+        {/* Mobile logo */}
+        <div className="lg:hidden flex items-center gap-2.5 mb-8">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+            <Zap size={16} className="text-white fill-white" />
+          </div>
+          <span className="text-lg font-bold text-textMain">Chain<span className="gradient-text">Track</span></span>
         </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-5">
-          {error && <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-sm">{error}</div>}
-          <Input 
-            label="Email" 
-            type="email" 
-            placeholder="you@company.com" 
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-textMain tracking-tight">Welcome back</h1>
+          <p className="text-textMuted text-sm mt-1.5">Sign in to your workspace</p>
+        </div>
+
+        {error && (
+          <div className="mb-5 flex items-start gap-3 px-4 py-3 rounded-xl bg-danger/8 border border-danger/25 text-danger text-sm animate-slide-up">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <Input
+            label="Email address"
+            type="email"
+            placeholder="you@company.com"
             value={email}
+            icon={<Mail size={15} />}
             onChange={(e) => setEmail(e.target.value)}
-            required 
+            required
+            autoComplete="email"
           />
-          <Input 
-            label="Password" 
-            type="password" 
-            placeholder="••••••••" 
+          <Input
+            label="Password"
+            type="password"
+            placeholder="••••••••"
             value={password}
+            icon={<Lock size={15} />}
             onChange={(e) => setPassword(e.target.value)}
-            required 
+            required
+            autoComplete="current-password"
           />
-          
-          <Button type="submit" className="w-full mt-2" disabled={loginMutation.isPending}>
-            {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full mt-2"
+            disabled={loginMutation.isPending}
+          >
+            {loginMutation.isPending ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              'Sign in'
+            )}
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-textMuted">
-          Don't have an account? <Link to="/signup" className="text-primary hover:underline">Sign up</Link>
-        </div>
-      </Card>
+        <p className="mt-6 text-center text-sm text-textMuted">
+          No account yet?{' '}
+          <Link to="/signup" className="text-primary hover:text-primary/80 font-medium transition-colors">
+            Create one free
+          </Link>
+        </p>
+      </div>
     </AuthLayout>
   );
 };

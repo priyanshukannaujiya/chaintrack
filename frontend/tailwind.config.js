@@ -7,32 +7,42 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0F172A',
-        surface: '#1E293B',
-        primary: '#3B82F6',
-        secondary: '#8B5CF6',
-        accent: '#10B981',
-        textMain: '#F8FAFC',
-        textMuted: '#94A3B8',
-        border: '#334155'
+        background:    '#080C14',
+        surface:       '#0E1420',
+        'surface-2':   '#131B2B',
+        border:        '#1E2D45',
+        'border-light':'#243450',
+        primary:       '#4F6EF7',
+        'primary-dark':'#3A55E0',
+        secondary:     '#7C5CFC',
+        accent:        '#00D4AA',
+        'accent-warm': '#F59E0B',
+        textMain:      '#EEF2FF',
+        textSub:       '#A8B8D8',
+        textMuted:     '#5C738A',
+        success:       '#10B981',
+        warning:       '#F59E0B',
+        danger:        '#EF4444',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.4s ease-out',
+        'fade-in':  'fadeIn 0.25s ease-out',
+        'slide-up': 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        'slide-in': 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        'spin':     'spin 0.75s linear infinite',
+        'ping':     'ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite',
       },
       keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        }
-      }
+        fadeIn:  { from: { opacity: '0' }, to: { opacity: '1' } },
+        slideUp: { from: { opacity: '0', transform: 'translateY(16px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        slideIn: { from: { opacity: '0', transform: 'translateX(-12px)' }, to: { opacity: '1', transform: 'translateX(0)' } },
+      },
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+      },
     },
   },
   plugins: [],
