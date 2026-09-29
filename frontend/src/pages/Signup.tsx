@@ -20,7 +20,10 @@ export const Signup: React.FC = () => {
   const signupMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const res = await api.post('/auth/signup', data);
-      if (res.data.token) localStorage.setItem('token', res.data.token);
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user_email', data.email);
+      }
       return res.data;
     },
     onSuccess: () => navigate('/dashboard'),

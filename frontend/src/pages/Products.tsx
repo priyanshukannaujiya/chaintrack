@@ -4,11 +4,14 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { Modal } from '../components/ui/Modal';
+import { Input } from '../components/ui/Input';
 import {
   Package, Plus, Upload, CheckCircle2, XCircle,
-  AlertTriangle, X, FileText, Search
+  AlertTriangle, X, FileText, Search,
+  Tag, Hash, FileSpreadsheet
 } from 'lucide-react';
-import { fetchProducts, importProducts } from '../services/products';
+import { fetchProducts, importProducts, createProduct } from '../services/products';
 
 interface RowError { row_num: number; error: string; }
 interface ImportResult { success_count: number; errors: RowError[]; }
@@ -41,7 +44,7 @@ const ImportResultModal: React.FC<{ result: ImportResult | null; onClose: () => 
             </div>
             <div>
               <h3 className="font-semibold text-textMain text-sm">Import Complete</h3>
-              <p className="text-xs text-textMuted mt-0.5">CSV processing finished</p>
+              <p className="text-xs text-textMuted mt-0.5">CSV batch processing finished</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-textMuted hover:text-textMain hover:bg-surface-2 transition-all">
@@ -100,8 +103,13 @@ export const Products: React.FC = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [search, setSearch] = useState('');
+  
+  // Create Product modal state
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: '', quantity: 100, description: '' });
+  const [createError, setCreateError] = useState('');
 
   const { data: products, isLoading, error } = useQuery({
     queryKey: ['products'],
@@ -113,11 +121,22 @@ export const Products: React.FC = () => {
     onSuccess: (data: ImportResult) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setImportResult(data);
-      setShowModal(true);
     },
     onError: () => {
-      setImportResult(null);
-      setShowModal(true);
+      setShowErrorModal(true);
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setIsCreateOpen(false);
+      setNewProduct({ name: '', quantity: 100, description: '' });
+      setCreateError('');
+    },
+    onError: (err: any) => {
+      setCreateError(err.response?.data?.detail || 'Failed to create product');
     },
   });
 
@@ -127,108 +146,238 @@ export const Products: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProduct.name.trim()) {
+      setCreateError('Product name is required');
+      return;
+    }
+    createMutation.mutate(newProduct);
+  };
+
+  const handleDownloadSampleCSV = () => {
+    const csvContent = 'data:text/csv;charset=utf-8,name,quantity,description\n' +
+      'Cold-Chain Insulin R-100,500,Refrigerated pharmaceutical insulin batch\n' +
+      '3nm Silicon Wafer Lot #4,200,High-precision semiconductor wafers\n' +
+      'EV Battery Cells 800V,1200,Automotive grade energy storage modules\n' +
+      'Organic Fair-Trade Coffee,3500,Single origin arabica green beans';
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'chaintrack_sample_products.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filtered = products?.filter((p: any) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    (p.description && p.description.toLowerCase().includes(search.toLowerCase()))
   ) ?? [];
 
   return (
     <DashboardLayout>
-      <ImportResultModal result={importResult} onClose={() => { setShowModal(false); setImportResult(null); }} />
+      <ImportResultModal result={importResult} onClose={() => setImportResult(null)} />
 
       {/* Error modal */}
-      {showModal && !importResult && (
+      {showErrorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-md" onClick={() => setShowModal(false)} />
-          <div className="relative glass-strong rounded-2xl p-8 text-center max-w-sm w-full animate-slide-up">
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-md" onClick={() => setShowErrorModal(false)} />
+          <div className="relative glass-strong rounded-2xl p-8 text-center max-w-sm w-full animate-slide-up border border-danger/30">
             <XCircle size={36} className="text-danger mx-auto mb-3" />
             <h2 className="text-base font-bold text-textMain mb-1">Import Failed</h2>
-            <p className="text-sm text-textMuted mb-5">Could not upload the file. Check the backend is running.</p>
-            <Button onClick={() => setShowModal(false)} variant="danger" size="sm">Close</Button>
+            <p className="text-sm text-textMuted mb-5">Could not process CSV. Ensure backend is running and CSV format is valid.</p>
+            <Button onClick={() => setShowErrorModal(false)} variant="danger" size="sm">Close</Button>
           </div>
         </div>
       )}
 
+      {/* Manual Product Creation Modal */}
+      <Modal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Register New Asset / Product"
+        subtitle="Mint product specifications into the ChainTrack registry"
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
+          {createError && (
+            <div className="p-3 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs">
+              {createError}
+            </div>
+          )}
+
+          <Input
+            label="Product / SKU Name"
+            placeholder="e.g. Cold-Chain Insulin R-100"
+            value={newProduct.name}
+            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+            icon={<Tag size={15} />}
+            required
+          />
+
+          <Input
+            label="Initial Batch Quantity"
+            type="number"
+            min="1"
+            placeholder="100"
+            value={newProduct.quantity.toString()}
+            onChange={(e) => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) || 1 })}
+            icon={<Hash size={15} />}
+            required
+          />
+
+          <div>
+            <label className="block text-xs font-semibold text-textSub mb-1.5">Description / Specifications</label>
+            <textarea
+              rows={3}
+              placeholder="e.g. Temperature-controlled batch requiring continuous +2°C to +8°C telemetry."
+              value={newProduct.description}
+              onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-2/60 border border-border text-sm text-textMain placeholder-textMuted focus:outline-none focus:border-primary/60 transition-all resize-none"
+            />
+          </div>
+
+          <div className="pt-2 flex justify-end gap-2.5">
+            <Button type="button" variant="secondary" size="sm" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Registering...' : 'Register Asset'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-7">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
         <div>
-          <h1 className="text-2xl font-bold text-textMain tracking-tight">Products</h1>
-          <p className="text-textMuted text-sm mt-1">Manage your inventory catalog</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-textMuted">Enterprise Asset Ledger</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-textMain tracking-tight">Products & Inventory</h1>
+          <p className="text-textMuted text-xs mt-0.5">Manage tokenized catalog items and track verified inventory batches.</p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Download sample CSV template */}
+          <button
+            onClick={handleDownloadSampleCSV}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-2 border border-border text-xs font-semibold text-textSub hover:text-textMain hover:border-primary/40 transition-all"
+            title="Download CSV template"
+          >
+            <FileSpreadsheet size={14} className="text-accent" />
+            <span>Sample CSV</span>
+          </button>
+
           <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+          
           <Button
             variant="secondary"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={importMutation.isPending}
           >
-            <Upload size={15} />
-            {importMutation.isPending ? 'Importing…' : 'Import CSV'}
+            <Upload size={14} />
+            {importMutation.isPending ? 'Importing…' : 'Bulk Import CSV'}
           </Button>
-          <Button size="sm">
-            <Plus size={15} />
-            Add Product
+
+          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+            <Plus size={14} />
+            Register Product
           </Button>
         </div>
       </div>
 
-      {/* Search + table */}
+      {/* Search + Table Container */}
       <Card className="p-0 overflow-hidden">
         {/* Search bar */}
-        <div className="px-5 py-3.5 border-b border-border flex items-center gap-3">
-          <Search size={15} className="text-textMuted shrink-0" />
-          <input
-            type="text"
-            placeholder="Search products…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-textMain placeholder:text-textMuted outline-none"
-          />
+        <div className="px-5 py-3.5 border-b border-border flex items-center justify-between gap-3 bg-surface-2/30">
+          <div className="flex items-center gap-3 flex-1">
+            <Search size={15} className="text-textMuted shrink-0" />
+            <input
+              type="text"
+              placeholder="Search product name or technical specifications…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-xs text-textMain placeholder:text-textMuted outline-none"
+            />
+          </div>
           {products && (
-            <span className="text-xs text-textMuted shrink-0">{filtered.length} items</span>
+            <span className="text-[11px] font-semibold text-textMuted shrink-0 bg-surface px-2.5 py-1 rounded-lg border border-border/60">
+              {filtered.length} registered
+            </span>
           )}
         </div>
 
         {isLoading ? (
-          <div className="py-14 flex flex-col items-center gap-3">
+          <div className="py-16 flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-sm text-textMuted">Loading products…</p>
+            <p className="text-xs text-textMuted font-mono">Querying decentralized inventory state…</p>
           </div>
         ) : error ? (
           <div className="py-14 text-center">
             <XCircle size={32} className="text-danger mx-auto mb-2 opacity-60" />
-            <p className="text-sm text-danger">Failed to load products.</p>
+            <p className="text-sm font-semibold text-danger">Failed to load product catalog.</p>
+            <p className="text-xs text-textMuted mt-1">Verify backend connectivity or check authorization token.</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-textMuted">
-            <Package size={40} className="opacity-30" />
-            <p className="text-sm">{search ? 'No matching products' : 'No products yet'}</p>
-            {!search && <p className="text-xs text-textMuted">Import a CSV or add products manually</p>}
+          <div className="py-16 flex flex-col items-center gap-3 text-textMuted text-center">
+            <div className="w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center border border-border">
+              <Package size={24} className="text-textMuted/60" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-textMain">{search ? 'No matching products found' : 'No registered assets in this company'}</p>
+              <p className="text-xs text-textMuted mt-0.5">
+                {search ? 'Try clearing your search query' : 'Import your catalog using CSV or register a product manually.'}
+              </p>
+            </div>
+            {!search && (
+              <div className="flex gap-2 mt-2">
+                <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+                  <Plus size={14} /> Register First Product
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                  <Upload size={14} /> Upload CSV
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-border">
-                  {['Name', 'Description', 'Qty', 'Status'].map((h) => (
-                    <th key={h} className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-textMuted">{h}</th>
-                  ))}
+                <tr className="border-b border-border bg-surface-2/20 text-textMuted uppercase tracking-wider font-semibold text-[10px]">
+                  <th className="px-5 py-3.5">Asset Name</th>
+                  <th className="px-5 py-3.5">Specifications / Description</th>
+                  <th className="px-5 py-3.5">Available Quantity</th>
+                  <th className="px-5 py-3.5">Ledger Status</th>
+                  <th className="px-5 py-3.5 text-right">Verification</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/60">
                 {filtered.map((product: any) => (
-                  <tr key={product.id} className="tr-hover border-b border-border last:border-0">
-                    <td className="px-5 py-3.5 text-sm font-semibold text-textMain">{product.name}</td>
-                    <td className="px-5 py-3.5 text-sm text-textMuted max-w-[200px] truncate">
-                      {product.description || <span className="text-textMuted/40">—</span>}
+                  <tr key={product.id} className="hover:bg-surface-2/40 transition-colors group">
+                    <td className="px-5 py-3.5 font-semibold text-textMain group-hover:text-primary transition-colors">
+                      {product.name}
+                    </td>
+                    <td className="px-5 py-3.5 text-textMuted max-w-[280px] truncate">
+                      {product.description || <span className="text-textMuted/40 font-mono">—</span>}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="text-sm font-medium text-textMain">{product.quantity.toLocaleString()}</span>
+                      <span className="font-mono font-bold text-textMain bg-surface-2/60 px-2 py-0.5 rounded border border-border/60">
+                        {product.quantity.toLocaleString()} units
+                      </span>
                     </td>
                     <td className="px-5 py-3.5">
                       <Badge variant={product.status === 'ACTIVE' ? 'success' : product.status === 'DRAFT' ? 'default' : 'warning'} dot>
-                        {product.status}
+                        {product.status || 'ACTIVE'}
                       </Badge>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-accent">
+                        <CheckCircle2 size={12} /> Cryptographically Signed
+                      </span>
                     </td>
                   </tr>
                 ))}

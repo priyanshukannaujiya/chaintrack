@@ -15,7 +15,10 @@ export const Login: React.FC = () => {
 
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: () => navigate('/dashboard'),
+    onSuccess: () => {
+      localStorage.setItem('user_email', email);
+      navigate('/dashboard');
+    },
     onError: (err: any) => {
       setError(err.response?.data?.detail || 'Invalid email or password.');
     },
