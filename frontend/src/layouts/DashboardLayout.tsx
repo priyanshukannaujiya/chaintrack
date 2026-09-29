@@ -4,7 +4,7 @@ import { logout } from '../services/auth';
 import {
   LayoutDashboard, Package, Truck, LogOut, ChevronRight,
   Settings, Zap, Search, Bell, ShieldCheck,
-  ChevronDown, Activity, Layers,
+  ChevronDown, Layers,
   X, Check
 } from 'lucide-react';
 import { cn } from '../components/ui/Button';
@@ -210,34 +210,16 @@ const NotificationsMenu: React.FC = () => {
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 glass-strong border border-border rounded-2xl shadow-2xl py-2 z-50 animate-slide-up text-left">
-          <div className="px-4 py-2 border-b border-border flex items-center justify-between">
-            <span className="text-xs font-bold text-textMain tracking-wide uppercase">Real-Time Ledger Feed</span>
+          <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+            <span className="text-xs font-bold text-textMain tracking-wide uppercase">System Notifications</span>
             <span className="text-[10px] font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
-              Live Stream
+              Active
             </span>
           </div>
-          <div className="divide-y divide-border/60 max-h-64 overflow-y-auto">
-            <div className="p-3 text-xs hover:bg-surface-2/60 transition-colors">
-              <div className="flex items-center gap-1.5 text-accent font-semibold text-[11px] mb-0.5">
-                <Check size={12} /> Block #19,482,109 Confirmed
-              </div>
-              <p className="text-textSub">Batch #SKU-9921 cryptographic custody transferred to Antwerp Hub.</p>
-              <span className="text-[10px] text-textMuted mt-1 inline-block">1 min ago</span>
-            </div>
-            <div className="p-3 text-xs hover:bg-surface-2/60 transition-colors">
-              <div className="flex items-center gap-1.5 text-primary font-semibold text-[11px] mb-0.5">
-                <ShieldCheck size={12} /> Quality Assurance Verified
-              </div>
-              <p className="text-textSub">Temperature sensor validation 100% compliant (+4.2°C nominal).</p>
-              <span className="text-[10px] text-textMuted mt-1 inline-block">12 mins ago</span>
-            </div>
-            <div className="p-3 text-xs hover:bg-surface-2/60 transition-colors">
-              <div className="flex items-center gap-1.5 text-textSub font-semibold text-[11px] mb-0.5">
-                <Activity size={12} /> Oracle Sync Complete
-              </div>
-              <p className="text-textSub">Cross-border customs release signature verified.</p>
-              <span className="text-[10px] text-textMuted mt-1 inline-block">35 mins ago</span>
-            </div>
+          <div className="p-4 text-xs text-textMuted text-center">
+            <Check size={20} className="text-accent mx-auto mb-1.5" />
+            <p className="font-semibold text-textMain text-xs">All Systems Operational</p>
+            <p className="text-[11px] text-textMuted mt-0.5">Database and API services are online. No alerts at this time.</p>
           </div>
         </div>
       )}
@@ -310,9 +292,9 @@ const UserMenu: React.FC<{ onLogout: () => void; loggingOut: boolean }> = ({ onL
 };
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Overview & Ops', badge: 'Live' },
-  { to: '/products',  icon: Package,         label: 'Product Registry' },
-  { to: '/shipments', icon: Truck,            label: 'Shipment Custody', badge: '42' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
+  { to: '/products',  icon: Package,         label: 'Products & SKUs' },
+  { to: '/shipments', icon: Truck,            label: 'Shipment Custody' },
 ];
 
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -341,8 +323,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             <div className="flex items-center gap-2 truncate">
               <div className="w-2 h-2 rounded-full bg-accent" />
               <div className="truncate">
-                <p className="font-semibold text-textMain text-[11px] truncate">Global Supply Chain HQ</p>
-                <p className="text-[9px] text-textMuted">Polygon POS • Mainnet</p>
+                <p className="font-semibold text-textMain text-[11px] truncate">Supply Chain Workspace</p>
+                <p className="text-[9px] text-textMuted">Enterprise Node</p>
               </div>
             </div>
             <ShieldCheck size={14} className="text-primary shrink-0" />
@@ -355,7 +337,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             Operations & Registry
           </p>
 
-          {navItems.map(({ to, icon: Icon, label, badge }) => (
+          {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -378,16 +360,6 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                     )}
                   />
                   <span className="flex-1">{label}</span>
-                  {badge && (
-                    <span className={cn(
-                      "text-[9px] font-bold px-1.5 py-0.5 rounded-full border",
-                      isActive
-                        ? "bg-primary text-white border-primary"
-                        : "bg-surface text-textMuted border-border group-hover:border-textMuted"
-                    )}>
-                      {badge}
-                    </span>
-                  )}
                   {isActive && <ChevronRight size={13} className="text-primary/70 shrink-0" />}
                 </>
               )}
@@ -395,23 +367,23 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           ))}
         </nav>
 
-        {/* Network & Cryptographic Proof Status Panel */}
+        {/* System Connection Status Panel */}
         <div className="px-4 py-3 mx-3 mb-3 rounded-2xl bg-surface-2/40 border border-border/80">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-textMuted">Node Telemetry</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-textMuted">Service Status</span>
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent">
               <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              99.98%
+              Online
             </span>
           </div>
           <div className="space-y-1 text-[10px] text-textSub font-mono">
             <div className="flex justify-between">
-              <span className="text-textMuted">Block:</span>
-              <span className="text-textMain font-semibold">#19,482,109</span>
+              <span className="text-textMuted">Database:</span>
+              <span className="text-textMain font-semibold">PostgreSQL</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-textMuted">Ledger:</span>
-              <span className="text-accent font-semibold">0x7F...E91A</span>
+              <span className="text-textMuted">API Auth:</span>
+              <span className="text-accent font-semibold">Active</span>
             </div>
           </div>
         </div>
