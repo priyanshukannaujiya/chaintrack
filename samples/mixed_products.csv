@@ -1,0 +1,10 @@
+name,quantity,description
+Good Product One,100,Valid row - should import
+Good Product Two,0,Valid row - zero quantity is allowed
+Good Product Three,9999,Valid row - no description is fine
+,200,FAIL: missing name
+Bad Qty Product,abc,FAIL: quantity is not a number
+Negative Qty Product,-5,FAIL: negative quantity
+Good Product Four,50,Valid row - should import
+Double Negative,--10,FAIL: double negative is not an int
+Good Product Five,1,Valid row - minimum quantity

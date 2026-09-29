@@ -1,0 +1,5 @@
+name,quantity,description
+Broken Widget,-50,This has a negative quantity and will fail
+,100,This has no name and will fail
+Half-Broken Widget,abc,This has text instead of a number for quantity and will fail
+Valid Widget,10,This one is completely valid and should be imported normally!
