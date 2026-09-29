@@ -18,7 +18,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ALLOWED_ORIGINS
-        # Replace with your actual Vercel URL after first deploy
-        value: https://chaintrack.vercel.app,http://localhost:5173
+        # Live Vercel frontend URL + local development
+        value: https://chaintrack-rose.vercel.app,http://localhost:5173
       - key: PYTHON_VERSION
         value: "3.11.0"

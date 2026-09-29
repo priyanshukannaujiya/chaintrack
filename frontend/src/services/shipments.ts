@@ -14,3 +14,8 @@ export const fetchTracking = async (shipmentId: string) => {
   const { data } = await api.get(`/shipments/${shipmentId}/tracking`);
   return data;
 };
+
+export const fetchCompanies = async () => {
+  const { data } = await api.get('/companies');
+  return data;
+};

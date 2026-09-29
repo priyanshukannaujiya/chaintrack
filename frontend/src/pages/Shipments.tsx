@@ -5,8 +5,8 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import { Truck, Plus, Activity, MapPin, Calendar, Hash } from 'lucide-react';
-import { fetchShipments, fetchTracking, createShipment } from '../services/shipments';
+import { Truck, Plus, Activity, MapPin, Calendar, Building2 } from 'lucide-react';
+import { fetchShipments, fetchTracking, createShipment, fetchCompanies } from '../services/shipments';
 import { fetchProducts } from '../services/products';
 
 const statusVariant = (status: string) => {
@@ -27,6 +27,10 @@ export const Shipments: React.FC = () => {
   const { data: products } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts,
+  });
+  const { data: companies } = useQuery({
+    queryKey: ['companies'],
+    queryFn: fetchCompanies,
   });
 
   const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
@@ -54,10 +58,20 @@ export const Shipments: React.FC = () => {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.product_id || !formData.to_company_id) {
-      setCreateError('Please fill in all required fields');
+      setCreateError('Please select both a product and a destination company.');
       return;
     }
     createMutation.mutate(formData);
+  };
+
+  const getProductName = (productId: string) => {
+    const prod = products?.find((p: any) => p.id === productId);
+    return prod ? prod.name : `${productId.slice(0, 8)}…`;
+  };
+
+  const getCompanyName = (companyId: string) => {
+    const comp = companies?.find((c: any) => c.id === companyId);
+    return comp ? comp.name : `${companyId.slice(0, 8)}…`;
   };
 
   return (
@@ -65,8 +79,8 @@ export const Shipments: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-7">
         <div>
-          <h1 className="text-2xl font-bold text-textMain tracking-tight">Shipments</h1>
-          <p className="text-textMuted text-sm mt-1">Track and manage product movements</p>
+          <h1 className="text-2xl font-bold text-textMain tracking-tight">Shipment Custody</h1>
+          <p className="text-textMuted text-xs mt-1">Track and manage product movements across verified nodes</p>
         </div>
         <Button size="sm" onClick={() => setIsCreateOpen(true)}>
           <Plus size={15} />
@@ -79,49 +93,59 @@ export const Shipments: React.FC = () => {
         {isLoading ? (
           <div className="py-14 flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-sm text-textMuted">Loading shipments…</p>
+            <p className="text-xs text-textMuted font-mono">Loading shipments…</p>
           </div>
         ) : error ? (
           <div className="py-14 text-center">
             <p className="text-sm text-danger">Failed to load shipments.</p>
           </div>
         ) : !shipments?.length ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-textMuted">
+          <div className="py-16 flex flex-col items-center gap-3 text-textMuted text-center">
             <Truck size={40} className="opacity-30" />
-            <p className="text-sm">No shipments yet</p>
+            <p className="text-sm font-semibold text-textMain">No shipments recorded yet</p>
+            <p className="text-xs text-textMuted">Dispatch your first product shipment to start tracking.</p>
             <Button size="sm" onClick={() => setIsCreateOpen(true)}>
-              <Plus size={14} /> Create first shipment
+              <Plus size={14} /> Create First Shipment
             </Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-border">
-                  {['Shipment ID', 'Product', 'Destination', 'Status', ''].map((h) => (
-                    <th key={h} className="px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-textMuted">{h}</th>
-                  ))}
+                <tr className="border-b border-border bg-surface-2/20 text-textMuted uppercase tracking-wider font-semibold text-[10px]">
+                  <th className="px-5 py-3.5">Shipment ID</th>
+                  <th className="px-5 py-3.5">Product</th>
+                  <th className="px-5 py-3.5">Destination Partner</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5 text-right">Telemetry</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/60">
                 {shipments.map((s: any) => (
-                  <tr key={s.id} className="tr-hover border-b border-border last:border-0">
+                  <tr key={s.id} className="hover:bg-surface-2/40 transition-colors group">
                     <td className="px-5 py-3.5">
-                      <code className="text-xs text-textSub font-mono bg-surface-2 px-2 py-0.5 rounded-md">
+                      <code className="text-xs text-textSub font-mono bg-surface-2 px-2 py-0.5 rounded-md border border-border/60">
                         #{s.id.slice(0, 8)}
                       </code>
                     </td>
-                    <td className="px-5 py-3.5 text-xs text-textMuted font-mono">{s.product_id.slice(0, 8)}…</td>
-                    <td className="px-5 py-3.5 text-xs text-textMuted font-mono">{s.to_company_id.slice(0, 8)}…</td>
+                    <td className="px-5 py-3.5 font-semibold text-textMain">
+                      {getProductName(s.product_id)}
+                    </td>
+                    <td className="px-5 py-3.5 text-textSub">
+                      <div className="flex items-center gap-1.5">
+                        <Building2 size={13} className="text-textMuted shrink-0" />
+                        <span>{getCompanyName(s.to_company_id)}</span>
+                      </div>
+                    </td>
                     <td className="px-5 py-3.5">
                       <Badge variant={statusVariant(s.status)} dot>{s.status}</Badge>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 text-right">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setSelectedShipment(s.id)}
-                        className="text-xs gap-1.5"
+                        className="text-xs gap-1.5 py-1 px-2.5 h-auto"
                       >
                         <Activity size={13} />
                         Track
@@ -139,20 +163,20 @@ export const Shipments: React.FC = () => {
       <Modal
         isOpen={!!selectedShipment}
         onClose={() => setSelectedShipment(null)}
-        title="Live Tracking"
-        subtitle="Real-time shipment information"
+        title="Live Carrier Tracking"
+        subtitle="Real-time shipment logistics and status"
       >
         {trackingLoading ? (
           <div className="py-10 flex flex-col items-center gap-4">
             <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-sm text-textMuted">Contacting carrier API…</p>
+            <p className="text-xs text-textMuted font-mono">Contacting logistics carrier API…</p>
           </div>
         ) : trackingData ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-surface-2 rounded-xl border border-border">
               <div>
-                <p className="text-xs text-textMuted mb-1">Tracking Number</p>
-                <p className="font-bold text-primary font-mono">{trackingData.tracking_number}</p>
+                <p className="text-xs text-textMuted mb-1 font-semibold uppercase tracking-wider text-[10px]">Tracking Number</p>
+                <p className="font-bold text-primary font-mono text-sm">{trackingData.tracking_number}</p>
               </div>
               <Badge variant="info">{trackingData.carrier}</Badge>
             </div>
@@ -163,7 +187,7 @@ export const Shipments: React.FC = () => {
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-accent" />
               </div>
               <div>
-                <p className="text-xs text-textMuted">Current Status</p>
+                <p className="text-[10px] uppercase font-bold text-textMuted tracking-wider">Current Custody Status</p>
                 <p className="text-sm font-semibold text-textMain mt-0.5">{trackingData.current_status}</p>
               </div>
             </div>
@@ -172,22 +196,22 @@ export const Shipments: React.FC = () => {
               <div className="p-3 bg-surface-2 rounded-xl border border-border">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Calendar size={12} className="text-textMuted" />
-                  <p className="text-xs text-textMuted">Last Updated</p>
+                  <p className="text-[10px] uppercase font-bold text-textMuted tracking-wider">Last Ping</p>
                 </div>
-                <p className="text-sm font-medium text-textMain">{new Date(trackingData.last_updated).toLocaleString()}</p>
+                <p className="text-xs font-medium text-textMain font-mono">{new Date(trackingData.last_updated).toLocaleString()}</p>
               </div>
               <div className="p-3 bg-surface-2 rounded-xl border border-border">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <MapPin size={12} className="text-textMuted" />
-                  <p className="text-xs text-textMuted">Est. Delivery</p>
+                  <p className="text-[10px] uppercase font-bold text-textMuted tracking-wider">Est. Delivery</p>
                 </div>
-                <p className="text-sm font-semibold text-accent">{new Date(trackingData.estimated_delivery).toLocaleDateString()}</p>
+                <p className="text-xs font-semibold text-accent font-mono">{new Date(trackingData.estimated_delivery).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
         ) : (
           <div className="py-8 text-center">
-            <p className="text-sm text-danger">Failed to fetch tracking data.</p>
+            <p className="text-sm text-danger">Failed to fetch carrier tracking data.</p>
           </div>
         )}
       </Modal>
@@ -196,65 +220,77 @@ export const Shipments: React.FC = () => {
       <Modal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        title="New Shipment"
-        subtitle="Initiate a product transfer"
+        title="Initiate Shipment"
+        subtitle="Transfer product custody to a destination partner"
       >
         <form onSubmit={handleCreate} className="flex flex-col gap-4">
           {createError && (
-            <div className="text-xs text-danger bg-danger/8 border border-danger/20 rounded-xl px-3 py-2">
+            <div className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-xl px-3.5 py-2.5">
               {createError}
             </div>
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase tracking-widest text-textMuted">Select Product</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-textMuted">Select Product</label>
             <select
-              className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-textMain outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/60 transition-all hover:border-border-light"
+              className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs text-textMain outline-none focus:border-primary/60 transition-all hover:border-border-light"
               value={formData.product_id}
               onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
+              required
             >
-              <option value="">— Choose a product —</option>
+              <option value="">— Choose a product from inventory —</option>
               {products?.map((p: any) => (
-                <option key={p.id} value={p.id}>{p.name} (Qty: {p.quantity})</option>
+                <option key={p.id} value={p.id}>{p.name} (Stock: {p.quantity})</option>
               ))}
             </select>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase tracking-widest text-textMuted">Destination Company ID</label>
-            <div className="relative">
-              <Hash size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textMuted" />
-              <input
-                type="text"
-                placeholder="550e8400-e29b-41d4-…"
-                className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 pl-9 text-sm text-textMain outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/60 transition-all hover:border-border-light placeholder:text-textMuted"
+            <label className="text-xs font-semibold uppercase tracking-wider text-textMuted">Destination Company / Partner</label>
+            {companies && companies.length > 0 ? (
+              <select
+                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs text-textMain outline-none focus:border-primary/60 transition-all hover:border-border-light"
                 value={formData.to_company_id}
                 onChange={(e) => setFormData({ ...formData, to_company_id: e.target.value })}
+                required
+              >
+                <option value="">— Choose destination partner —</option>
+                {companies.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                placeholder="Enter destination company UUID..."
+                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs text-textMain outline-none focus:border-primary/60 transition-all placeholder:text-textMuted font-mono"
+                value={formData.to_company_id}
+                onChange={(e) => setFormData({ ...formData, to_company_id: e.target.value })}
+                required
               />
-            </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase tracking-widest text-textMuted">Quantity</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-textMuted">Quantity to Dispatch</label>
             <input
               type="number"
               min="1"
-              className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-textMain outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/60 transition-all hover:border-border-light"
+              className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs text-textMain outline-none focus:border-primary/60 transition-all font-mono"
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+              required
             />
           </div>
 
-          <Button type="submit" className="w-full mt-1" disabled={createMutation.isPending}>
-            {createMutation.isPending ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Initiating…
-              </>
-            ) : (
-              'Initiate Shipment'
-            )}
-          </Button>
+          <div className="pt-2 flex justify-end gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Initiating…' : 'Dispatch Shipment'}
+            </Button>
+          </div>
         </form>
       </Modal>
     </DashboardLayout>

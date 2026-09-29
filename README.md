@@ -63,12 +63,12 @@ Track every product, every shipment, every event — verified on-chain.</p>
 
 ## 🎯 Demo
 
-| Surface | URL |
-|---------|-----|
-| 🌐 Frontend | _Deploy on Vercel and add URL here_ |
-| 🔌 Backend API | `https://chaintrack-tylx.onrender.com` |
-| 📖 API Docs | `https://chaintrack-tylx.onrender.com/docs` |
-| ❤️ Health Check | `https://chaintrack-tylx.onrender.com/health` |
+| Surface | URL | Status |
+|---------|-----|--------|
+| 🌐 Frontend (Live App) | [https://chaintrack-rose.vercel.app](https://chaintrack-rose.vercel.app/) | ![Vercel](https://img.shields.io/badge/Vercel-Live-000000?style=flat-square&logo=vercel) |
+| 🔌 Backend API | [https://chaintrack-tylx.onrender.com](https://chaintrack-tylx.onrender.com) | ![Render](https://img.shields.io/badge/Render-Live-46E3B7?style=flat-square&logo=render&logoColor=white) |
+| 📖 Interactive API Docs (Swagger) | [https://chaintrack-tylx.onrender.com/docs](https://chaintrack-tylx.onrender.com/docs) | ![Swagger](https://img.shields.io/badge/Swagger-OpenAPI%203.0-85EA2D?style=flat-square&logo=swagger&logoColor=black) |
+| ❤️ Service Health Check | [https://chaintrack-tylx.onrender.com/health](https://chaintrack-tylx.onrender.com/health) | ![Health](https://img.shields.io/badge/Health-200%20OK-brightgreen?style=flat-square) |
 
 > **Note:** Render free tier sleeps after 15 min of inactivity. First request may take ~30s.
 
@@ -555,10 +555,11 @@ Widget B,Economy widget,250
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | `GET` | `/users/me` | ✅ | Get current user profile |
+| `GET` | `/companies` | ✅ | List all registered partner companies |
 | `GET` | `/companies/me` | ✅ | Get current company details |
 | `GET` | `/health` | ❌ | Service health check |
 
-> 📖 Full interactive API documentation available at: `https://chaintrack-tylx.onrender.com/docs`
+> 📖 Full interactive API documentation available at: [https://chaintrack-tylx.onrender.com/docs](https://chaintrack-tylx.onrender.com/docs)
 
 ---
 
@@ -572,12 +573,12 @@ GitHub (main branch)
       ├─── Vercel CI/CD ──────────────────────── Frontend (React)
       │         │                                    │
       │    Auto-deploy on push                  Vercel CDN
-      │    Root dir: frontend/                  (Global Edge)
+      │    Root dir: frontend/                  https://chaintrack-rose.vercel.app
       │
       └─── Render CI/CD ──────────────────────── Backend (FastAPI)
                 │                                    │
            Auto-deploy on push                  Render Web Service
-           Root dir: backend/                   (Oregon, Free Tier)
+           Root dir: backend/                   https://chaintrack-tylx.onrender.com
                                                      │
                                                Neon PostgreSQL
                                                (Serverless, Free Tier)
@@ -597,15 +598,15 @@ GitHub (main branch)
 1. Go to [vercel.com](https://vercel.com) → **New Project**
 2. Import your GitHub repository
 3. Set **Root Directory** → `frontend`
-4. Add environment variable:
-   - `VITE_API_BASE_URL` → `https://your-render-service.onrender.com/api/v1`
+4. Add environment variable (optional, default auto-fallback to live backend is built in):
+   - `VITE_API_BASE_URL` → `https://chaintrack-tylx.onrender.com/api/v1`
 5. Click **Deploy**
 
-### Update CORS After Deployment
+### Live Production CORS Settings
 
-In Render → **chaintrack-backend** → Environment → update:
+In Render → **chaintrack** → Environment:
 ```
-ALLOWED_ORIGINS=https://your-app.vercel.app,http://localhost:5173
+ALLOWED_ORIGINS=https://chaintrack-rose.vercel.app,http://localhost:5173
 ```
 
 ---
