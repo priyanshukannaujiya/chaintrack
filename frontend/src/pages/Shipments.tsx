@@ -6,14 +6,23 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { Truck, Plus, Activity, MapPin, Calendar, Building2 } from 'lucide-react';
-import { fetchShipments, fetchTracking, createShipment, fetchCompanies } from '../services/shipments';
+import { fetchShipments, fetchTracking, createShipment, fetchCompanies, transferShipment, receiveShipment } from '../services/shipments';
+import api from '../services/api';
+
+const fetchCurrentUser = async () => {
+  const { data } = await api.get('/users/me');
+  return data;
+};
 import { fetchProducts } from '../services/products';
 
 const statusVariant = (status: string) => {
   switch (status) {
     case 'DELIVERED': return 'success';
     case 'IN_TRANSIT': return 'info';
+    case 'SHIPPED':    return 'info';
+    case 'RECEIVED':   return 'success';
     case 'PENDING':    return 'warning';
+    case 'CANCELLED':  return 'default';
     default:           return 'default';
   }
 };
@@ -32,6 +41,11 @@ export const Shipments: React.FC = () => {
     queryKey: ['companies'],
     queryFn: fetchCompanies,
   });
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: fetchCurrentUser,
+  });
+  const myCompanyId = currentUser?.company_id;
 
   const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -53,6 +67,16 @@ export const Shipments: React.FC = () => {
       setCreateError('');
     },
     onError: (err: any) => setCreateError(err.response?.data?.detail || 'Failed to create shipment'),
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: (id: string) => transferShipment(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shipments'] }),
+  });
+
+  const receiveMutation = useMutation({
+    mutationFn: (id: string) => receiveShipment(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shipments'] }),
   });
 
   const handleCreate = (e: React.FormEvent) => {
@@ -115,13 +139,19 @@ export const Shipments: React.FC = () => {
                 <tr className="border-b border-border bg-surface-2/20 text-textMuted uppercase tracking-wider font-semibold text-[10px]">
                   <th className="px-5 py-3.5">Shipment ID</th>
                   <th className="px-5 py-3.5">Product</th>
-                  <th className="px-5 py-3.5">Destination Partner</th>
+                  <th className="px-5 py-3.5">From → To</th>
                   <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5 text-right">Telemetry</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {shipments.map((s: any) => (
+                {shipments.map((s: any) => {
+                  const isSender   = s.from_company_id === myCompanyId;
+                  const isReceiver = s.to_company_id   === myCompanyId;
+                  const canShip    = isSender   && s.status === 'PENDING';
+                  const canReceive = isReceiver && s.status === 'SHIPPED';
+
+                  return (
                   <tr key={s.id} className="hover:bg-surface-2/40 transition-colors group">
                     <td className="px-5 py-3.5">
                       <code className="text-xs text-textSub font-mono bg-surface-2 px-2 py-0.5 rounded-md border border-border/60">
@@ -132,27 +162,54 @@ export const Shipments: React.FC = () => {
                       {getProductName(s.product_id)}
                     </td>
                     <td className="px-5 py-3.5 text-textSub">
-                      <div className="flex items-center gap-1.5">
-                        <Building2 size={13} className="text-textMuted shrink-0" />
-                        <span>{getCompanyName(s.to_company_id)}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-textMuted text-[10px] font-mono">{getCompanyName(s.from_company_id)}</span>
+                        <span className="text-primary">→</span>
+                        <span className="font-semibold text-textMain">{getCompanyName(s.to_company_id)}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
                       <Badge variant={statusVariant(s.status)} dot>{s.status}</Badge>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedShipment(s.id)}
-                        className="text-xs gap-1.5 py-1 px-2.5 h-auto"
-                      >
-                        <Activity size={13} />
-                        Track
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {canShip && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => transferMutation.mutate(s.id)}
+                            disabled={transferMutation.isPending}
+                            className="text-xs gap-1.5 py-1 px-2.5 h-auto border-primary/40 text-primary hover:bg-primary/10"
+                          >
+                            <Truck size={12} />
+                            {transferMutation.isPending ? '…' : 'Ship'}
+                          </Button>
+                        )}
+                        {canReceive && (
+                          <Button
+                            size="sm"
+                            onClick={() => receiveMutation.mutate(s.id)}
+                            disabled={receiveMutation.isPending}
+                            className="text-xs gap-1.5 py-1 px-2.5 h-auto bg-accent/20 text-accent hover:bg-accent/30 border-accent/40"
+                          >
+                            <MapPin size={12} />
+                            {receiveMutation.isPending ? '…' : 'Receive'}
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedShipment(s.id)}
+                          className="text-xs gap-1.5 py-1 px-2.5 h-auto"
+                        >
+                          <Activity size={13} />
+                          Track
+                        </Button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -10,6 +10,16 @@ export const createShipment = async (shipmentData: { product_id: string; to_comp
   return data;
 };
 
+export const transferShipment = async (shipmentId: string) => {
+  const { data } = await api.post(`/shipments/${shipmentId}/transfer`);
+  return data;
+};
+
+export const receiveShipment = async (shipmentId: string) => {
+  const { data } = await api.post(`/shipments/${shipmentId}/receive`);
+  return data;
+};
+
 export const fetchTracking = async (shipmentId: string) => {
   const { data } = await api.get(`/shipments/${shipmentId}/tracking`);
   return data;
