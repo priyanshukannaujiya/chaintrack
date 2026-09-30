@@ -139,6 +139,7 @@ export const Shipments: React.FC = () => {
                 <tr className="border-b border-border bg-surface-2/20 text-textMuted uppercase tracking-wider font-semibold text-[10px]">
                   <th className="px-5 py-3.5">Shipment ID</th>
                   <th className="px-5 py-3.5">Product</th>
+                  <th className="px-5 py-3.5">Quantity</th>
                   <th className="px-5 py-3.5">From → To</th>
                   <th className="px-5 py-3.5">Status</th>
                   <th className="px-5 py-3.5 text-right">Actions</th>
@@ -160,6 +161,9 @@ export const Shipments: React.FC = () => {
                     </td>
                     <td className="px-5 py-3.5 font-semibold text-textMain">
                       {getProductName(s.product_id)}
+                    </td>
+                    <td className="px-5 py-3.5 font-mono text-textMain font-semibold">
+                      {s.quantity ? `${s.quantity} units` : '1 unit'}
                     </td>
                     <td className="px-5 py-3.5 text-textSub">
                       <div className="flex items-center gap-1.5 flex-wrap">
