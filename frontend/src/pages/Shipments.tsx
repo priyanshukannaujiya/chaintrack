@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import { Truck, Plus, Activity, MapPin, Calendar, Building2 } from 'lucide-react';
+import { Truck, Plus, Activity, MapPin, Calendar } from 'lucide-react';
 import { fetchShipments, fetchTracking, createShipment, fetchCompanies, transferShipment, receiveShipment } from '../services/shipments';
 import api from '../services/api';
 
