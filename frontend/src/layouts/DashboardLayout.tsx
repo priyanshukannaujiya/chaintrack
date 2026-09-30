@@ -5,9 +5,11 @@ import {
   LayoutDashboard, Package, Truck, LogOut, ChevronRight,
   Settings, Zap, Search, Bell, ShieldCheck,
   ChevronDown, Layers,
-  X, Check
+  X, Check, Sun, Moon, Laptop
 } from 'lucide-react';
 import { cn } from '../components/ui/Button';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
 
 /* ── Live clock hook with high precision ── */
 function useLiveClock() {
@@ -231,6 +233,7 @@ const NotificationsMenu: React.FC = () => {
 const UserMenu: React.FC<{ onLogout: () => void; loggingOut: boolean }> = ({ onLogout, loggingOut }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { theme, setTheme } = useTheme();
   const userEmail = localStorage.getItem('user_email') || 'priyanshu@chaintrack.io';
   const displayName = userEmail.split('@')[0];
 
@@ -261,7 +264,7 @@ const UserMenu: React.FC<{ onLogout: () => void; loggingOut: boolean }> = ({ onL
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 glass-strong border border-border rounded-2xl shadow-2xl py-2 z-50 animate-slide-up text-left">
+        <div className="absolute right-0 mt-2 w-60 glass-strong border border-border rounded-2xl shadow-2xl py-2 z-50 animate-slide-up text-left">
           <div className="px-4 py-2.5 border-b border-border">
             <p className="text-xs font-semibold text-textMain capitalize">{displayName}</p>
             <p className="text-[11px] text-textMuted truncate">{userEmail}</p>
@@ -269,6 +272,52 @@ const UserMenu: React.FC<{ onLogout: () => void; loggingOut: boolean }> = ({ onL
               <ShieldCheck size={11} /> Enterprise Tier Active
             </div>
           </div>
+          
+          {/* Quick Theme Switcher */}
+          <div className="px-3 py-2 border-b border-border/80">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-textMuted mb-1.5">
+              Interface Theme
+            </div>
+            <div className="grid grid-cols-3 gap-1 bg-surface-2 p-1 rounded-xl border border-border/60">
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={cn(
+                  'flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-semibold transition-all',
+                  theme === 'light'
+                    ? 'bg-surface text-primary shadow-sm border border-border/50'
+                    : 'text-textMuted hover:text-textMain'
+                )}
+              >
+                <Sun size={12} className={theme === 'light' ? 'text-amber-500' : ''} /> Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={cn(
+                  'flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-semibold transition-all',
+                  theme === 'dark'
+                    ? 'bg-surface text-primary shadow-sm border border-border/50'
+                    : 'text-textMuted hover:text-textMain'
+                )}
+              >
+                <Moon size={12} className={theme === 'dark' ? 'text-primary' : ''} /> Dark
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('system')}
+                className={cn(
+                  'flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-semibold transition-all',
+                  theme === 'system'
+                    ? 'bg-surface text-primary shadow-sm border border-border/50'
+                    : 'text-textMuted hover:text-textMain'
+                )}
+              >
+                <Laptop size={12} /> Auto
+              </button>
+            </div>
+          </div>
+
           <div className="p-1">
             <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-textSub hover:text-textMain hover:bg-surface-2 rounded-xl transition-colors">
               <Settings size={14} /> Workspace Preferences
@@ -424,7 +473,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           </div>
 
           {/* Right: Actions, Notifications, and User Menu */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle />
             <NotificationsMenu />
             <div className="w-px h-6 bg-border" />
             <UserMenu onLogout={handleLogout} loggingOut={loggingOut} />

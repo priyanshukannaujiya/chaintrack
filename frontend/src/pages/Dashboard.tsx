@@ -17,6 +17,7 @@ import {
 import { fetchProducts } from '../services/products';
 import { fetchShipments } from '../services/shipments';
 import { fetchBlockchainEvents } from '../services/blockchain';
+import { useTheme } from '../context/ThemeContext';
 
 const STATUS_COLORS: Record<string, string> = {
   DELIVERED: '#10B981',
@@ -51,6 +52,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const [searchFilter, setSearchFilter] = useState('');
 
   // Fetch real database records
@@ -373,9 +375,9 @@ export const Dashboard: React.FC = () => {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={productChartData} margin={{ top: 8, right: 12, left: -16, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1E2D45" vertical={false} />
-                  <XAxis dataKey="name" stroke="#5C738A" fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" />
-                  <YAxis stroke="#5C738A" fontSize={10} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1E2D45' : '#E2E8F0'} vertical={false} />
+                  <XAxis dataKey="name" stroke={isDark ? '#5C738A' : '#64748B'} fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" />
+                  <YAxis stroke={isDark ? '#5C738A' : '#64748B'} fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="quantity" fill="#4F6EF7" radius={[4, 4, 0, 0]} barSize={28}>
                     {productChartData.map((_: any, index: number) => (

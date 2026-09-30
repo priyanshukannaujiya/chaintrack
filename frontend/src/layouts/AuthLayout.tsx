@@ -1,9 +1,13 @@
-import React from 'react';
 import { Zap } from 'lucide-react';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 
 export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="min-h-screen flex overflow-hidden bg-background relative">
+      {/* Top right theme toggle */}
+      <div className="absolute top-5 right-5 z-30">
+        <ThemeToggle />
+      </div>
       {/* ── Left panel (branding) — hidden on mobile ── */}
       <div className="hidden lg:flex w-[45%] flex-col justify-between p-12 relative overflow-hidden bg-surface/30 border-r border-border">
         {/* Gradient blobs */}
