@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.domain import BlockchainEvent, BlockchainEventStatusEnum
 from app.schemas.blockchain import BlockchainEventCreate
 import uuid
+from typing import Optional
 from fastapi import HTTPException
 
 class BlockchainService:
@@ -20,6 +21,22 @@ class BlockchainService:
         self.db.commit()
         self.db.refresh(event)
         return event
+
+    def get_events(
+        self,
+        company_id: uuid.UUID,
+        product_id: Optional[uuid.UUID] = None,
+        page: int = 1,
+        limit: int = 50
+    ):
+        query = self.db.query(BlockchainEvent).filter(
+            BlockchainEvent.company_id == company_id
+        )
+        if product_id:
+            query = query.filter(BlockchainEvent.product_id == product_id)
+        query = query.order_by(BlockchainEvent.created_at.desc())
+        offset = (page - 1) * limit
+        return query.offset(offset).limit(limit).all()
 
     def get_event(self, transaction_hash: str):
         event = self.db.query(BlockchainEvent).filter(BlockchainEvent.transaction_hash == transaction_hash).first()

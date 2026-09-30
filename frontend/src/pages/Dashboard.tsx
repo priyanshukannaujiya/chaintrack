@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import {
   Package, Truck, CheckCircle2,
   RefreshCw, Download, Search,
-  Plus, Layers, AlertCircle, ArrowUpRight
+  Plus, Layers, AlertCircle, ArrowUpRight, Link2
 } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { fetchProducts } from '../services/products';
 import { fetchShipments } from '../services/shipments';
+import { fetchBlockchainEvents } from '../services/blockchain';
 
 const STATUS_COLORS: Record<string, string> = {
   DELIVERED: '#10B981',
@@ -75,7 +76,17 @@ export const Dashboard: React.FC = () => {
     queryFn: fetchShipments,
   });
 
-  const isSyncing = productsFetching || shipmentsFetching;
+  const {
+    data: blockchainEvents = [],
+    isLoading: eventsLoading,
+    refetch: refetchEvents,
+    isFetching: eventsFetching
+  } = useQuery({
+    queryKey: ['blockchain-events'],
+    queryFn: () => fetchBlockchainEvents({ limit: 10 }),
+  });
+
+  const isSyncing = productsFetching || shipmentsFetching || eventsFetching;
 
   // Real-time calculated KPIs from actual database data
   const totalProducts = products.length;
@@ -146,6 +157,7 @@ export const Dashboard: React.FC = () => {
   const handleRefresh = () => {
     refetchProducts();
     refetchShipments();
+    refetchEvents();
   };
 
   // Export actual database data to CSV
@@ -550,8 +562,113 @@ export const Dashboard: React.FC = () => {
               onClick={() => navigate('/shipments')}
               className="text-primary hover:underline font-semibold"
             >
-              View All in Shipments →
+              View All in Shipments &rarr;
             </button>
+          </div>
+        )}
+      </Card>
+
+      {/* ═══════════════ BLOCKCHAIN EVENTS FEED ═══════════════ */}
+      <Card className="p-0 overflow-hidden mt-5">
+        <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-2/30">
+          <div>
+            <div className="flex items-center gap-2">
+              <Link2 size={15} className="text-secondary" />
+              <h2 className="text-sm font-bold text-textMain tracking-tight">Blockchain Event Log</h2>
+              <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-2 py-0.5 rounded-full border border-secondary/20">
+                On-Chain
+              </span>
+            </div>
+            <p className="text-xs text-textMuted mt-0.5">
+              Ethereum Sepolia transactions recorded for your company's products.
+            </p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          {eventsLoading ? (
+            <div className="py-14 text-center">
+              <div className="w-8 h-8 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs text-textMuted font-mono">Fetching on-chain events...</p>
+            </div>
+          ) : blockchainEvents.length === 0 ? (
+            <div className="py-16 text-center text-textMuted">
+              <Link2 size={36} className="text-textMuted/30 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-textMain">No blockchain events recorded</p>
+              <p className="text-xs text-textMuted mt-0.5">
+                Register a product on-chain from the Products page using MetaMask to create events.
+              </p>
+              <Button size="sm" className="mt-3" onClick={() => navigate('/products')}>
+                <Package size={13} /> Go to Products
+              </Button>
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border bg-surface-2/20 text-textMuted uppercase tracking-wider font-semibold text-[10px]">
+                  <th className="px-5 py-3.5">Tx Hash</th>
+                  <th className="px-5 py-3.5">Event Type</th>
+                  <th className="px-5 py-3.5">Product ID</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5">Recorded At</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {blockchainEvents.map((ev: any) => (
+                  <tr key={ev.id} className="hover:bg-surface-2/40 transition-colors">
+                    <td className="px-5 py-3.5 font-mono text-secondary">
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${ev.transaction_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline hover:text-secondary/80 transition-colors"
+                        title={ev.transaction_hash}
+                      >
+                        {ev.transaction_hash.slice(0, 12)}…
+                      </a>
+                    </td>
+                    <td className="px-5 py-3.5 font-mono font-semibold text-textMain">
+                      {ev.event_type}
+                    </td>
+                    <td className="px-5 py-3.5 font-mono text-textMuted">
+                      {ev.product_id ? `${ev.product_id.slice(0, 8)}…` : '—'}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <Badge
+                        variant={
+                          ev.status === 'CONFIRMED' ? 'success'
+                          : ev.status === 'FAILED' ? 'danger'
+                          : ev.status === 'SYNC_REQUIRED' ? 'warning'
+                          : 'info'
+                        }
+                        dot
+                      >
+                        {ev.status}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3.5 text-textMuted font-mono">
+                      {ev.created_at
+                        ? new Date(ev.created_at).toLocaleString()
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {blockchainEvents.length > 0 && (
+          <div className="px-5 py-3 border-t border-border flex items-center justify-between text-xs text-textMuted bg-surface-2/20">
+            <span>Showing {blockchainEvents.length} most recent on-chain events</span>
+            <a
+              href="https://sepolia.etherscan.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-secondary hover:underline font-semibold flex items-center gap-1"
+            >
+              View on Etherscan <ArrowUpRight size={12} />
+            </a>
           </div>
         )}
       </Card>
