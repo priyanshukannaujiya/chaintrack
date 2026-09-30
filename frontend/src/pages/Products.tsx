@@ -165,6 +165,7 @@ export const Products: React.FC = () => {
     try {
       const txHash = await registerOnBlockchain(productId, productName);
       setBlockchainDone(prev => new Set(prev).add(productId));
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       console.log('Blockchain tx:', txHash);
     } catch (err: any) {
       alert(err?.message || 'Blockchain registration failed');
@@ -421,10 +422,16 @@ export const Products: React.FC = () => {
                       </Badge>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      {blockchainDone.has(product.id) ? (
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-accent bg-accent/10 px-2.5 py-1 rounded-full border border-accent/20">
+                      {product.blockchain_hash || product.status === 'REGISTERED' || blockchainDone.has(product.id) ? (
+                        <a
+                          href={product.blockchain_hash ? `https://sepolia.etherscan.io/tx/${product.blockchain_hash}` : '#'}
+                          target={product.blockchain_hash ? "_blank" : undefined}
+                          rel="noreferrer"
+                          title={product.blockchain_hash ? `View tx ${product.blockchain_hash} on Sepolia Etherscan` : 'Registered on-chain'}
+                          className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-accent hover:text-accent-hover hover:underline bg-accent/10 px-2.5 py-1 rounded-full border border-accent/20 transition-all"
+                        >
                           <CheckCircle2 size={12} /> Registered on-chain
-                        </span>
+                        </a>
                       ) : (
                         <button
                           onClick={() => handleRegisterBlockchain(product.id, product.name)}

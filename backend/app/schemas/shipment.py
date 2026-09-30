@@ -14,6 +14,7 @@ class ShipmentResponse(BaseModel):
     product_id: UUID
     from_company_id: UUID
     to_company_id: UUID
+    quantity: Decimal
     status: ShipmentStatusEnum
 
     class Config:

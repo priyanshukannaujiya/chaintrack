@@ -100,6 +100,7 @@ class Shipment(Base):
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), index=True, nullable=False)
     from_company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
     to_company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
+    quantity = Column(Numeric, nullable=False, default=1)
     status = Column(Enum(ShipmentStatusEnum), default=ShipmentStatusEnum.PENDING, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
