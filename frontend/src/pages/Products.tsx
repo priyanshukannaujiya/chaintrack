@@ -25,9 +25,14 @@ async function registerOnBlockchain(productId: string, productName: string): Pro
   const data = '0x' + Array.from(new TextEncoder().encode(
     JSON.stringify({ product_id: productId, event: 'PRODUCT_REGISTERED', name: productName })
   )).map(b => b.toString(16).padStart(2, '0')).join('');
+  // Send to the burn address — required because MetaMask rejects data payloads
+  // on self-transfers to EOA accounts ("External transactions to internal accounts
+  // cannot include data"). The burn address is the standard pattern for on-chain
+  // data anchoring without a deployed smart contract.
+  const BURN_ADDRESS = '0x000000000000000000000000000000000000dEaD';
   const txHash: string = await eth.request({
     method: 'eth_sendTransaction',
-    params: [{ from, to: from, value: '0x0', data, chainId: '0xaa36a7' /* Sepolia */ }],
+    params: [{ from, to: BURN_ADDRESS, value: '0x0', data, chainId: '0xaa36a7' /* Sepolia */ }],
   });
   // Store the tx_hash in our backend
   await api.post('/blockchain/events', {
