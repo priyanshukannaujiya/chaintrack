@@ -9,9 +9,34 @@ import { Input } from '../components/ui/Input';
 import {
   Package, Plus, Upload, CheckCircle2, XCircle,
   AlertTriangle, X, FileText, Search,
-  Tag, Hash, FileSpreadsheet
+  Tag, Hash, FileSpreadsheet, Link
 } from 'lucide-react';
 import { fetchProducts, importProducts, createProduct } from '../services/products';
+import api from '../services/api';
+
+// Register a product event on Ethereum Sepolia via MetaMask
+async function registerOnBlockchain(productId: string, productName: string): Promise<string> {
+  const eth = (window as any).ethereum;
+  if (!eth) throw new Error('MetaMask not found. Please install MetaMask.');
+  await eth.request({ method: 'eth_requestAccounts' });
+  const accounts: string[] = await eth.request({ method: 'eth_accounts' });
+  const from = accounts[0];
+  // Encode product info as hex data for the tx
+  const data = '0x' + Array.from(new TextEncoder().encode(
+    JSON.stringify({ product_id: productId, event: 'PRODUCT_REGISTERED', name: productName })
+  )).map(b => b.toString(16).padStart(2, '0')).join('');
+  const txHash: string = await eth.request({
+    method: 'eth_sendTransaction',
+    params: [{ from, to: from, value: '0x0', data, chainId: '0xaa36a7' /* Sepolia */ }],
+  });
+  // Store the tx_hash in our backend
+  await api.post('/blockchain/events', {
+    product_id: productId,
+    transaction_hash: txHash,
+    event_type: 'PRODUCT_REGISTERED',
+  });
+  return txHash;
+}
 
 interface RowError { row_num: number; error: string; }
 interface ImportResult { success_count: number; errors: RowError[]; }
@@ -126,6 +151,22 @@ export const Products: React.FC = () => {
       setShowErrorModal(true);
     },
   });
+
+  const [blockchainLoading, setBlockchainLoading] = useState<string | null>(null);
+  const [blockchainDone, setBlockchainDone]       = useState<Set<string>>(new Set());
+
+  const handleRegisterBlockchain = async (productId: string, productName: string) => {
+    setBlockchainLoading(productId);
+    try {
+      const txHash = await registerOnBlockchain(productId, productName);
+      setBlockchainDone(prev => new Set(prev).add(productId));
+      console.log('Blockchain tx:', txHash);
+    } catch (err: any) {
+      alert(err?.message || 'Blockchain registration failed');
+    } finally {
+      setBlockchainLoading(null);
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: createProduct,
@@ -375,9 +416,23 @@ export const Products: React.FC = () => {
                       </Badge>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-accent">
-                        <CheckCircle2 size={12} /> Cryptographically Signed
-                      </span>
+                      {blockchainDone.has(product.id) ? (
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-accent bg-accent/10 px-2.5 py-1 rounded-full border border-accent/20">
+                          <CheckCircle2 size={12} /> Registered on-chain
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleRegisterBlockchain(product.id, product.name)}
+                          disabled={blockchainLoading === product.id}
+                          className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-primary hover:text-white hover:bg-primary/80 bg-primary/10 border border-primary/30 px-2.5 py-1 rounded-full transition-all disabled:opacity-50 disabled:cursor-wait"
+                        >
+                          {blockchainLoading === product.id ? (
+                            <><div className="w-2.5 h-2.5 border border-primary/40 border-t-primary rounded-full animate-spin" /> Signing…</>
+                          ) : (
+                            <><Link size={11} /> Register on ⛓️ Chain</>
+                          )}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
